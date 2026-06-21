@@ -1,4 +1,5 @@
 # Keep Mac awake using built-in macOS caffeinate, in background
+unalias awake awake1h awake2h awake-status awake-stop 2>/dev/null || true
 _awake_pid_file="$HOME/.cache/caffeinate-awake.pid"
 _awake_log_file="/tmp/caffeinate-awake.log"
 
