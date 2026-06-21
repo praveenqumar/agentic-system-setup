@@ -1,0 +1,65 @@
+#!/usr/bin/env bash
+set -u
+
+usage() {
+  cat <<'USAGE'
+Usage:
+  spotlight-noindex <folder-path> [folder-path ...]
+
+Purpose:
+  Adds a .metadata_never_index marker inside each folder so Spotlight should skip indexing it.
+
+Examples:
+  spotlight-noindex ~/Projects/my-app/node_modules
+  spotlight-noindex /Volumes/SmartJoules/some-folder
+  spotlight-noindex folder1 folder2 folder3
+USAGE
+}
+
+if [ "$#" -eq 0 ] || [ "${1:-}" = "-h" ] || [ "${1:-}" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+ok=0
+fail=0
+
+for input in "$@"; do
+  case "$input" in
+    ~) path="$HOME" ;;
+    ~/*) path="$HOME/${input#~/}" ;;
+    *) path="$input" ;;
+  esac
+
+  if [ ! -e "$path" ]; then
+    echo "ERROR: Not found: $input" >&2
+    fail=$((fail + 1))
+    continue
+  fi
+
+  if [ ! -d "$path" ]; then
+    echo "ERROR: Not a folder: $input" >&2
+    fail=$((fail + 1))
+    continue
+  fi
+
+  if abs_path=$(cd "$path" 2>/dev/null && pwd -P); then
+    marker="$abs_path/.metadata_never_index"
+  else
+    echo "ERROR: Cannot access folder: $input" >&2
+    fail=$((fail + 1))
+    continue
+  fi
+
+  if touch "$marker" 2>/dev/null; then
+    echo "OK: Spotlight no-index marker added: $abs_path"
+    ok=$((ok + 1))
+  else
+    echo "ERROR: Could not write marker in: $abs_path" >&2
+    echo "       You may need permissions/admin rights for this folder." >&2
+    fail=$((fail + 1))
+  fi
+done
+
+echo "Summary: $ok updated, $fail failed"
+[ "$fail" -eq 0 ]
